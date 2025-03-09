@@ -30,19 +30,23 @@
 	onMount(fetchRecords);
 </script>
 
-<main class="min-h-screen bg-gray-50 p-8">
-	<h1 class="mb-6 text-2xl font-bold">근무 시간 관리</h1>
+<main class="min-h-screen bg-gray-50 p-8 transition-all dark:bg-gray-900">
+	<h1 class="mb-6 text-center text-3xl font-bold text-gray-900 dark:text-white">근무 시간 관리</h1>
+
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-		<div class="rounded-lg bg-white p-6 shadow-md">
-			<h2 class="text-xl font-semibold">근무 시간 기록</h2>
+		<div class="glass rounded-lg p-6 shadow-lg">
+			<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-300">근무 시간 기록</h2>
+			<p class="mb-4 text-gray-600 dark:text-gray-400">출퇴근 시간을 기록하세요.</p>
 			<WorkLogForm on:recordAdded={(e) => updateRecords(e.detail)} />
 		</div>
-		<div class="rounded-lg bg-white p-6 shadow-md">
-			<h2 class="text-xl font-semibold">주간 요약</h2>
+
+		<div class="glass rounded-lg p-6 shadow-lg">
+			<h2 class="text-xl font-semibold text-gray-800 dark:text-gray-300">주간 요약</h2>
 			<WorkSummary {totalHours} {overtime} />
 		</div>
 	</div>
-	<div class="mt-6">
+
+	<div class="glass mt-6 rounded-lg p-6 shadow-lg">
 		<WorkLogTable {records} />
 	</div>
 </main>

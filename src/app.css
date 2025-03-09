@@ -1,2 +1,16 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Glassmorphism 스타일 적용 */
+.glass {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 10px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(10px);
+}
+
+/* 다크 모드 */
+/* .dark-mode {
+	@apply bg-gray-900 text-white;
+} */
