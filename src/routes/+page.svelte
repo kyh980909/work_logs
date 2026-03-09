@@ -10,13 +10,23 @@
 	let message = '';
 	let messageType: 'info' | 'error' = 'info';
 	let selectedMailType: MailTemplateType = 'check_in';
+	let selectedTemplateType: MailTemplateType = 'check_in';
 	const mailTypes: MailTemplateType[] = ['check_in', 'check_out', 'outing', 'return'];
+	const mailTypeLabels: Record<MailTemplateType, string> = {
+		check_in: '출근',
+		check_out: '퇴근',
+		outing: '외출',
+		return: '복귀'
+	};
 
 	let settingsForm = toSettingsForm(dashboard.settings);
 	let attendanceForm = createAttendanceForm(dashboard);
 	let outingForm = createOutingForm(dashboard);
 	let leaveForm = createLeaveForm();
 	let mailForm = createMailForm(dashboard.mailPreview[selectedMailType]);
+	let selectedTemplateKeys = getTemplateKeys(selectedTemplateType);
+
+	$: selectedTemplateKeys = getTemplateKeys(selectedTemplateType);
 
 	$: if (data.dashboard !== dashboard) {
 		dashboard = data.dashboard;
@@ -158,6 +168,21 @@
 		attendanceForm = syncAttendanceForm(attendanceForm, dashboard);
 		outingForm = syncOutingForm(outingForm, dashboard);
 		mailForm = createMailForm(dashboard.mailPreview[selectedMailType]);
+	}
+
+	function getTemplateKeys(type: MailTemplateType) {
+		return {
+			subject: `${type}_subject` as const,
+			body: `${type}_body` as const
+		};
+	}
+
+	function resetTemplateEditor(type: MailTemplateType) {
+		const previewType = type;
+		const latest = toSettingsForm(dashboard.settings);
+		const keys = getTemplateKeys(previewType);
+		settingsForm.templates[keys.subject] = latest.templates[keys.subject];
+		settingsForm.templates[keys.body] = latest.templates[keys.body];
 	}
 
 	async function runTask(task: () => Promise<void>) {
@@ -711,6 +736,58 @@
 				<div class="field">
 					<label for="setting-signature">서명</label>
 					<textarea id="setting-signature" bind:value={settingsForm.emailSignature}></textarea>
+				</div>
+				<div class="panel" style="padding: 1rem; background: rgba(255, 255, 255, 0.55);">
+					<div class="kicker" style="margin-bottom: 0.5rem;">
+						<div>
+							<h3>기본 메일 템플릿 저장</h3>
+							<p class="subtle">여기서 수정한 템플릿은 `설정 저장` 시 기본값으로 저장됩니다.</p>
+						</div>
+					</div>
+					<div class="toolbar" style="margin-bottom: 0.75rem;">
+						{#each mailTypes as type (type)}
+							<button
+								class={`button ${selectedTemplateType === type ? 'primary' : 'secondary'}`}
+								on:click={() => (selectedTemplateType = type)}
+								type="button"
+							>
+								{mailTypeLabels[type]}
+							</button>
+						{/each}
+					</div>
+					<div class="field">
+						<label for="template-subject">
+							{mailTypeLabels[selectedTemplateType]} 메일 제목
+						</label>
+						<input
+							id="template-subject"
+							bind:value={settingsForm.templates[selectedTemplateKeys.subject]}
+						/>
+					</div>
+					<div class="field">
+						<label for="template-body">
+							{mailTypeLabels[selectedTemplateType]} 메일 본문
+						</label>
+						<textarea
+							id="template-body"
+							bind:value={settingsForm.templates[selectedTemplateKeys.body]}
+						></textarea>
+					</div>
+					<p class="subtle">
+						사용 가능한 변수: <span class="code">{'{{name}}'}</span>,
+						<span class="code">{'{{pretty_date}}'}</span>, <span class="code">{'{{time}}'}</span>,
+						<span class="code">{'{{signature}}'}</span>
+					</p>
+					<div class="toolbar">
+						<button
+							class="button ghost"
+							on:click={() => resetTemplateEditor(selectedTemplateType)}
+							disabled={busy}
+							type="button"
+						>
+							현재 저장값으로 되돌리기
+						</button>
+					</div>
 				</div>
 				<div class="toolbar">
 					<button class="button primary" on:click={submitSettings} disabled={busy}>설정 저장</button
