@@ -21,6 +21,11 @@ function encodeBase64Url(input: string) {
 		.replace(/=+$/g, '');
 }
 
+function encodeMimeHeader(value: string) {
+	if (!/[^\x00-\x7F]/.test(value)) return value;
+	return `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`;
+}
+
 function getOAuthConfig(origin?: string) {
 	const clientId = env.GOOGLE_CLIENT_ID;
 	const clientSecret = env.GOOGLE_CLIENT_SECRET;
@@ -159,8 +164,9 @@ export async function sendMail(request: MailSendRequest, origin?: string): Promi
 			preview.to.length > 0 ? `To: ${preview.to.join(', ')}` : '',
 			preview.cc.length > 0 ? `Cc: ${preview.cc.join(', ')}` : '',
 			'Content-Type: text/plain; charset="UTF-8"',
+			'Content-Transfer-Encoding: 8bit',
 			'MIME-Version: 1.0',
-			`Subject: ${preview.subject}`,
+			`Subject: ${encodeMimeHeader(preview.subject)}`,
 			'',
 			preview.body
 		]
