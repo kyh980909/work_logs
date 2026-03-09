@@ -22,7 +22,8 @@ function encodeBase64Url(input: string) {
 }
 
 function encodeMimeHeader(value: string) {
-	if (!/[^\x00-\x7F]/.test(value)) return value;
+	const hasNonAscii = [...value].some((char) => char.charCodeAt(0) > 127);
+	if (!hasNonAscii) return value;
 	return `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`;
 }
 

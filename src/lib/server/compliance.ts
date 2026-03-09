@@ -296,6 +296,12 @@ export function renderTemplate(template: string, variables: Record<string, strin
 	return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => variables[key] ?? '');
 }
 
+function formatPrettyDate(value: string) {
+	const [year, month, day] = value.split('-').map(Number);
+	if (!year || !month || !day) return value;
+	return `${month}월 ${day}일`;
+}
+
 export function buildMailPreviewMap(params: {
 	settings: AppSettings;
 	today: string;
@@ -309,6 +315,7 @@ export function buildMailPreviewMap(params: {
 	const baseVariables = {
 		name: params.settings.name,
 		date: params.today,
+		pretty_date: formatPrettyDate(params.today),
 		time: params.todayLog?.checkOut ?? params.todayLog?.checkIn ?? formatTime(now),
 		reason: activeOuting?.reason ?? '업무 관련 외출',
 		destination: activeOuting?.destination ?? '외부 미팅',
@@ -350,6 +357,7 @@ export function buildTemplateVariables(params: {
 	return {
 		name: params.settings.name,
 		date: params.date ?? formatDate(getNow()),
+		pretty_date: formatPrettyDate(params.date ?? formatDate(getNow())),
 		time: params.time ?? formatTime(getNow()),
 		reason: params.reason ?? '업무 관련 외출',
 		destination: params.destination ?? '외부 일정',

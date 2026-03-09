@@ -12,7 +12,7 @@ import type {
 	OutingStatus
 } from '$lib/types';
 
-const defaultTemplates: MailTemplateMap = {
+const legacyDefaultTemplates: MailTemplateMap = {
 	check_in_subject: '[출근] {{name}} {{date}} {{time}}',
 	check_in_body:
 		'{{name}} 전문연구요원입니다.\n{{date}} {{time}} 출근하였습니다.\n금일 연구업무를 시작합니다.\n\n{{signature}}',
@@ -25,6 +25,21 @@ const defaultTemplates: MailTemplateMap = {
 	return_subject: '[복귀] {{name}} {{date}} {{time}}',
 	return_body:
 		'{{name}} 전문연구요원입니다.\n{{date}} {{time}} 외출 복귀하였습니다.\n사유: {{reason}}\n\n{{signature}}'
+};
+
+const defaultTemplates: MailTemplateMap = {
+	check_in_subject: '[전문연구요원] 출근 메일 보냅니다.',
+	check_in_body:
+		'안녕하세요 선생님\n정보통신공학과 박사과정 {{name}}입니다.\n\n{{pretty_date}} {{time}} 출근했습니다.\n\n감사합니다.\n\n{{name}} 올림\n\n{{signature}}',
+	check_out_subject: '[전문연구요원] 퇴근 메일 보냅니다.',
+	check_out_body:
+		'안녕하세요 선생님\n정보통신공학과 박사과정 {{name}}입니다.\n\n{{pretty_date}} {{time}} 퇴근했습니다.\n\n감사합니다.\n\n{{name}} 올림\n\n{{signature}}',
+	outing_subject: '[전문연구요원] 외출 메일 보냅니다.',
+	outing_body:
+		'안녕하세요 선생님\n정보통신공학과 박사과정 {{name}}입니다.\n\n{{pretty_date}} {{time}} 외출했습니다.\n\n감사합니다.\n\n{{name}} 올림\n\n{{signature}}',
+	return_subject: '[전문연구요원] 복귀 메일 보냅니다.',
+	return_body:
+		'안녕하세요 선생님\n정보통신공학과 박사과정 {{name}}입니다.\n\n{{pretty_date}} {{time}} 복귀했습니다.\n\n감사합니다.\n\n{{name}} 올림\n\n{{signature}}'
 };
 
 type SettingsRow = {
@@ -63,9 +78,23 @@ function parseTemplates(value: string) {
 	}
 }
 
+function isSameTemplateMap(left: MailTemplateMap, right: MailTemplateMap) {
+	return (
+		left.check_in_subject === right.check_in_subject &&
+		left.check_in_body === right.check_in_body &&
+		left.check_out_subject === right.check_out_subject &&
+		left.check_out_body === right.check_out_body &&
+		left.outing_subject === right.outing_subject &&
+		left.outing_body === right.outing_body &&
+		left.return_subject === right.return_subject &&
+		left.return_body === right.return_body
+	);
+}
+
 function ensureSettingsRow() {
-	const existing = db.prepare('SELECT id FROM leave_settings WHERE id = 1').get() as
+	const existing = db.prepare('SELECT id, templates FROM leave_settings WHERE id = 1').get() as
 		| { id: number }
+		| { id: number; templates: string }
 		| undefined;
 	if (!existing) {
 		const now = nowIso();
@@ -85,6 +114,16 @@ function ensureSettingsRow() {
 			JSON.stringify(defaultTemplates),
 			now,
 			now
+		);
+		return;
+	}
+
+	const parsedTemplates =
+		'templates' in existing ? parseTemplates(existing.templates) : defaultTemplates;
+	if (isSameTemplateMap(parsedTemplates, legacyDefaultTemplates)) {
+		db.prepare('UPDATE leave_settings SET templates = ?, updated_at = ? WHERE id = 1').run(
+			JSON.stringify(defaultTemplates),
+			nowIso()
 		);
 	}
 }
