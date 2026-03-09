@@ -27,6 +27,20 @@
 	let selectedTemplateKeys = getTemplateKeys(selectedTemplateType);
 
 	$: selectedTemplateKeys = getTemplateKeys(selectedTemplateType);
+	$: syncMailFormWithSettings(
+		selectedMailType,
+		settingsForm.name,
+		settingsForm.defaultTo,
+		settingsForm.defaultCc,
+		settingsForm.emailSignature,
+		JSON.stringify(settingsForm.templates),
+		outingForm.reason,
+		outingForm.destination,
+		outingForm.endTime,
+		dashboard.attendance.todayStatus.date,
+		dashboard.attendance.todayStatus.checkIn ?? '',
+		dashboard.attendance.todayStatus.checkOut ?? ''
+	);
 
 	$: if (data.dashboard !== dashboard) {
 		dashboard = data.dashboard;
@@ -170,6 +184,53 @@
 		mailForm = createMailForm(dashboard.mailPreview[selectedMailType]);
 	}
 
+	function formatPrettyDate(value: string) {
+		const [year, month, day] = value.split('-').map(Number);
+		if (!year || !month || !day) return value;
+		return `${month}월 ${day}일`;
+	}
+
+	function renderTemplate(template: string, variables: Record<string, string>) {
+		return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => variables[key] ?? '');
+	}
+
+	function createMailPreviewFromSettings(type: MailTemplateType) {
+		const keys = getTemplateKeys(type);
+		const today = dashboard.attendance.todayStatus.date;
+		const currentTime =
+			type === 'check_out'
+				? (dashboard.attendance.todayStatus.checkOut ?? localTime())
+				: (dashboard.attendance.todayStatus.checkIn ?? localTime());
+		const variables = {
+			name: settingsForm.name,
+			date: today,
+			pretty_date: formatPrettyDate(today),
+			time: currentTime,
+			reason: outingForm.reason || '업무 관련 외출',
+			destination: outingForm.destination || '외부 일정',
+			return_time: outingForm.endTime || '',
+			signature: settingsForm.emailSignature
+		};
+
+		return {
+			to: toCommaList(settingsForm.defaultTo).join(', '),
+			cc: toCommaList(settingsForm.defaultCc).join(', '),
+			subject: renderTemplate(settingsForm.templates[keys.subject], variables),
+			body: renderTemplate(settingsForm.templates[keys.body], variables)
+		};
+	}
+
+	function syncMailFormWithSettings(..._deps: string[]) {
+		void _deps;
+		const preview = createMailPreviewFromSettings(selectedMailType);
+		mailForm = {
+			to: preview.to,
+			cc: preview.cc,
+			subject: preview.subject,
+			body: preview.body
+		};
+	}
+
 	function getTemplateKeys(type: MailTemplateType) {
 		return {
 			subject: `${type}_subject` as const,
@@ -291,7 +352,7 @@
 
 	function chooseMailType(type: MailTemplateType) {
 		selectedMailType = type;
-		mailForm = createMailForm(dashboard.mailPreview[type]);
+		syncMailFormWithSettings();
 	}
 
 	async function quickAction(type: MailTemplateType) {
